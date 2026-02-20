@@ -1,0 +1,125 @@
+---
+description: Database patterns and SQLite best practices
+globs: src/database/**/*.py
+alwaysApply: false
+---
+
+# Database Patterns
+
+## Connection Management
+
+```python
+# ✅ GOOD - использование context manager или явное закрытие
+def get_advertisement(ad_id: int):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM advertisements WHERE id = ?", (ad_id,))
+        return cursor.fetchone()
+    finally:
+        conn.close()
+
+# ✅ BETTER - использование context manager
+def get_advertisement(ad_id: int):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM advertisements WHERE id = ?", (ad_id,))
+        return cursor.fetchone()
+```
+
+## Safe Migrations
+
+```python
+# ✅ GOOD - проверка существования колонок перед добавлением
+def add_column_if_not_exists(conn: sqlite3.Connection, table: str, column: str, definition: str):
+    """Безопасное добавление колонки"""
+    cursor = conn.cursor()
+    cursor.execute(f"PRAGMA table_info({table})")
+    columns = [row[1] for row in cursor.fetchall()]
+    
+    if column not in columns:
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+        logger.info(f"Добавлена колонка {column} в таблицу {table}")
+    else:
+        logger.debug(f"Колонка {column} уже существует в таблице {table}")
+```
+
+## Parameterized Queries
+
+```python
+# ✅ GOOD - использование параметризованных запросов
+cursor.execute(
+    "SELECT * FROM advertisements WHERE user_id = ? AND keyword = ?",
+    (user_id, keyword)
+)
+
+# ❌ BAD - SQL injection уязвимость
+cursor.execute(f"SELECT * FROM advertisements WHERE user_id = {user_id}")
+```
+
+## WAL Mode and Optimization
+
+```python
+# ✅ GOOD - настройка WAL режима и оптимизация
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Включаем WAL режим для лучшей производительности
+    cursor.execute("PRAGMA journal_mode=WAL")
+    
+    # Оптимизируем настройки
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.execute("PRAGMA cache_size=-64000")  # 64MB кэш
+    cursor.execute("PRAGMA temp_store=MEMORY")
+    
+    conn.commit()
+```
+
+## Transaction Management
+
+```python
+# ✅ GOOD - использование транзакций для множественных операций
+def save_advertisement_with_buttons(ad_data: dict, button_data: dict):
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        cursor = conn.cursor()
+        # Начало транзакции
+        cursor.execute("BEGIN TRANSACTION")
+        
+        # Сохранение объявления
+        cursor.execute("INSERT INTO advertisements ...", ad_data)
+        ad_id = cursor.lastrowid
+        
+        # Сохранение кнопок
+        cursor.execute("INSERT INTO button_messages ...", button_data)
+        
+        # Коммит транзакции
+        conn.commit()
+        return ad_id
+    except Exception as e:
+        conn.rollback()
+        logger.error(f"Ошибка при сохранении: {e}")
+        raise
+    finally:
+        conn.close()
+```
+
+## Error Handling
+
+```python
+# ✅ GOOD - обработка специфичных ошибок БД
+try:
+    cursor.execute("INSERT INTO advertisements ...")
+    conn.commit()
+except sqlite3.IntegrityError as e:
+    logger.error(f"Integrity error: {e}")
+    raise
+except sqlite3.OperationalError as e:
+    logger.error(f"Operational error: {e}")
+    # Возможно, нужно выполнить миграцию
+    raise
+except sqlite3.Error as e:
+    logger.error(f"Database error: {e}")
+    raise
+```

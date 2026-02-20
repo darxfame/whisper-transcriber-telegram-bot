@@ -1,0 +1,6 @@
+services:
+  redis:
+    platform: linux/arm64
+  userbot:
+    platform: linux/arm64
+

@@ -1,0 +1,135 @@
+---
+description: Telegram bot API patterns and best practices
+globs: **/*.py
+alwaysApply: false
+---
+
+# Telegram Bot Patterns
+
+## Handler Patterns
+
+### Message Handlers
+```python
+# ✅ GOOD - проверка фильтров в начале функции
+async def collect_media_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = update.effective_message
+    
+    # Ранние возвраты для фильтрации
+    if message.forward_origin:
+        return
+    if message.chat.id != SOURCE_CHAT_ID:
+        return
+    if message.from_user and message.from_user.is_bot:
+        return
+    
+    # Основная логика
+    await process_message(message, context)
+
+# ❌ BAD - вложенные условия
+async def collect_media_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    message = update.effective_message
+    if not message.forward_origin:
+        if message.chat.id == SOURCE_CHAT_ID:
+            if not (message.from_user and message.from_user.is_bot):
+                await process_message(message, context)
+```
+
+### Callback Handlers
+```python
+# ✅ GOOD - использование wrapper для обработки ошибок
+async def callback_wrapper(callback_func, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обертка для обработки callback с логированием ошибок"""
+    try:
+        await callback_func(update, context)
+    except Exception as e:
+        logger.error(f"Error in callback: {e}", exc_info=True)
+        if update.callback_query:
+            await update.callback_query.answer("⚠️ Произошла ошибка", show_alert=True)
+
+# Использование
+async def bump_wrapper(update, context):
+    await callback_wrapper(bump_button_callback, update, context)
+```
+
+### Error Handling
+```python
+# ✅ GOOD - обработка специфичных ошибок Telegram
+from telegram.error import BadRequest, Forbidden, NetworkError, RetryAfter, TimedOut
+
+try:
+    await bot.send_message(chat_id, text)
+except RetryAfter as e:
+    logger.warning(f"Rate limit: {e.retry_after} seconds")
+    await asyncio.sleep(e.retry_after)
+except Forbidden:
+    logger.warning("Bot blocked by user")
+except BadRequest as e:
+    logger.error(f"Bad request: {e}")
+except (NetworkError, TimedOut):
+    logger.warning("Network error, will retry")
+except TelegramError as e:
+    logger.error(f"Telegram error: {e}")
+```
+
+## State Management
+
+### bot_data (глобальное состояние)
+```python
+# ✅ GOOD - инициализация с проверкой
+if 'media_groups_temp' not in context.bot_data:
+    context.bot_data['media_groups_temp'] = {}
+
+temp_storage = context.bot_data['media_groups_temp']
+temp_storage[mg_id] = []
+```
+
+### user_data (состояние пользователя)
+```python
+# ✅ GOOD - использование для временных данных
+user_id = update.effective_user.id
+if 'preview_messages' not in context.user_data:
+    context.user_data['preview_messages'] = []
+
+context.user_data['preview_messages'].append(message_id)
+```
+
+## Job Queue Patterns
+
+```python
+# ✅ GOOD - планирование задач с данными
+async def schedule_deletion(message_id: int, delay: int, context: ContextTypes.DEFAULT_TYPE):
+    context.job_queue.run_once(
+        delete_message_job,
+        delay,
+        data={'message_id': message_id}
+    )
+
+# ✅ GOOD - периодические задачи
+app.job_queue.run_repeating(
+    daily_reset_job,
+    interval=86400,  # 24 часа
+    first=86400
+)
+```
+
+## Media Groups
+
+```python
+# ✅ GOOD - обработка медиагрупп с таймаутом
+if message.media_group_id:
+    mg_id = message.media_group_id
+    if 'media_groups_temp' not in context.bot_data:
+        context.bot_data['media_groups_temp'] = {}
+    
+    temp_storage = context.bot_data['media_groups_temp']
+    if mg_id not in temp_storage:
+        temp_storage[mg_id] = []
+        # Планируем обработку через 2 секунды
+        context.job_queue.run_once(
+            process_media_group_job,
+            2,
+            data={'media_group_id': mg_id}
+        )
+    
+    temp_storage[mg_id].append(message)
+```

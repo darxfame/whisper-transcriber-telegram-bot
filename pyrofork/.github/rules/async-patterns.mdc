@@ -1,0 +1,91 @@
+---
+description: Async/await patterns and best practices
+globs: **/*.py
+alwaysApply: false
+---
+
+# Async Patterns
+
+## Async Function Definitions
+
+```python
+# ✅ GOOD - все функции, работающие с Telegram API, должны быть async
+async def process_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await bot.send_message(chat_id, text)
+    result = await some_async_operation()
+    return result
+
+# ❌ BAD - синхронные вызовы async функций
+def process_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    bot.send_message(chat_id, text)  # Ошибка!
+```
+
+## Await All Async Operations
+
+```python
+# ✅ GOOD - await для всех async операций
+async def publish_advertisement(message_id: int, context: ContextTypes.DEFAULT_TYPE):
+    message = await context.bot.forward_message(
+        chat_id=DEST_CHAT_ID,
+        from_chat_id=SOURCE_CHAT_ID,
+        message_id=message_id
+    )
+    await context.bot.send_message(
+        chat_id=DEST_CHAT_ID,
+        text="Объявление опубликовано"
+    )
+
+# ❌ BAD - забыт await
+async def publish_advertisement(message_id: int, context: ContextTypes.DEFAULT_TYPE):
+    message = context.bot.forward_message(...)  # Ошибка!
+```
+
+## Error Handling in Async
+
+```python
+# ✅ GOOD - обработка ошибок в async функциях
+async def send_message_safe(chat_id: int, text: str, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        await context.bot.send_message(chat_id=chat_id, text=text)
+    except RetryAfter as e:
+        logger.warning(f"Rate limit: {e.retry_after}")
+        await asyncio.sleep(e.retry_after)
+        await context.bot.send_message(chat_id=chat_id, text=text)
+    except TelegramError as e:
+        logger.error(f"Telegram error: {e}", exc_info=True)
+        raise
+```
+
+## Background Tasks
+
+```python
+# ✅ GOOD - создание фоновых задач
+async def post_init(app: Application):
+    """Инициализация после запуска приложения"""
+    asyncio.create_task(process_callback_queue_worker(app))
+    logger.info("✅ Worker запущен")
+
+app.post_init = post_init
+```
+
+## Async Context Managers
+
+```python
+# ✅ GOOD - использование async context managers при необходимости
+async def process_with_timeout():
+    async with asyncio.timeout(30):
+        await long_running_operation()
+```
+
+## Concurrent Operations
+
+```python
+# ✅ GOOD - параллельное выполнение независимых операций
+async def process_multiple_messages(message_ids: List[int], context: ContextTypes.DEFAULT_TYPE):
+    tasks = [
+        process_single_message(msg_id, context)
+        for msg_id in message_ids
+    ]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    return results
+```

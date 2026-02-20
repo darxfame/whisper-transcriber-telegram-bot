@@ -1,0 +1,58 @@
+# Ignore the cookies.txt file in config
+cookies.txt
+config/cookies.txt
+config/alt_config.ini
+config/*.bak
+
+# Ignore all files named bot_token.txt
+**/bot_token.txt
+
+# Prevent bot_token.txt from being tracked
+config/bot_token.txt
+
+# Python cache files
+__pycache__/
+*.pyc
+
+# build directory
+build/
+
+# audio messages directory
+audio_messages/
+
+# video messages directory
+video_messages/
+
+# yt-dlp cache directory
+.cache/
+
+# transcriptions directory
+transcriptions/
+
+# audio files directory
+audio/
+
+# ignore potential transcribed files
+*.mp3
+*.wav
+*.aiff
+*.aac
+*.mp4
+*.vtt
+*.srt
+*.part
+
+# virtual environments
+venv/
+
+# log files
+*.log
+
+# backup files
+*.bak
+
+# Ignore diarization/temp artifacts
+src/utils/data/
+src/utils/data/**
+data/
+data/**

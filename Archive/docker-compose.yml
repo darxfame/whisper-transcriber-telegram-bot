@@ -1,0 +1,34 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - ./redis_data:/data
+
+  userbot:
+    build: .
+    entrypoint: []
+    command: ["python", "userbot.py"]
+    restart: unless-stopped
+    volumes:
+      - ./session:/app/session        # сюда сохранится .session файл
+      - ./temp:/app/temp              # временные файлы
+      - whisper_models:/app/models   # ← новая строка
+    environment:
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - BOT_TOKEN=${BOT_TOKEN}
+      - FRIEND_USER_ID=${FRIEND_USER_ID}
+      - TRANSCRIBE_MY_VOICES=true
+      - TRANSCRIBE_FRIEND_VOICES=true
+      - WHISPER_MODEL=medium
+      - RUNNING_IN_DOCKER=true   # ← добавь эту строку
+    deploy:
+      resources:
+        reservations:
+          memory: 50G  # Много RAM для Whisper
+          cpus: '8'    # Твои 8 ядер
+volumes:
+  whisper_models:                    # ← и сюда
+
+  # Оригинальный bot сервис из репозитория, если нужен

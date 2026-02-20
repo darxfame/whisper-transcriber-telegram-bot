@@ -1,0 +1,141 @@
+---
+description: Правила синхронизации команд бота - все CommandHandler должны быть в BotCommand списке
+alwaysApply: true
+---
+
+# Command Synchronization Rules
+
+## Критически важно: Синхронизация команд
+
+**ВСЕ команды, зарегистрированные через `CommandHandler`, ДОЛЖНЫ быть в списке `BotCommand` для установки в BotFather!**
+
+## Обязательный процесс при добавлении новой команды
+
+### Шаг 1: Создание обработчика команды
+1. Создать функцию обработчика в `src/handlers/commands.py`
+2. Экспортировать функцию (если нужно)
+
+### Шаг 2: Регистрация обработчика
+1. Импортировать функцию в `bot.py`
+2. Зарегистрировать через `app.add_handler(CommandHandler("command_name", handler_function))`
+
+### Шаг 3: Добавление в BotCommand список (ОБЯЗАТЕЛЬНО!)
+1. Найти список `commands` или `admin_commands` в функции `post_init`
+2. Добавить `BotCommand("command_name", "Описание команды")` в соответствующий список
+3. **КРИТИЧНО**: Команда должна быть в том же порядке, что и регистрация `CommandHandler`
+
+### Шаг 4: Проверка синхронизации (ОБЯЗАТЕЛЬНО!)
+После добавления команды:
+- [ ] Команда зарегистрирована через `CommandHandler`
+- [ ] Команда добавлена в список `BotCommand`
+- [ ] Описание команды понятное и информативное
+- [ ] Команда в правильном списке (общие или административные)
+
+## Автоматическая проверка синхронизации
+
+В функции `post_init` должна быть проверка:
+
+```python
+# После установки команд проверяем синхронизацию
+try:
+    # Получаем все зарегистрированные CommandHandler
+    registered_commands = []
+    for handler in app.handlers[0]:  # Группа 0 - команды
+        if isinstance(handler, CommandHandler):
+            registered_commands.append(handler.commands[0] if handler.commands else None)
+    
+    # Получаем все команды из BotCommand списка
+    bot_command_names = [cmd.command for cmd in all_commands]
+    
+    # Сравниваем
+    missing_in_bot_commands = set(registered_commands) - set(bot_command_names)
+    missing_in_handlers = set(bot_command_names) - set(registered_commands)
+    
+    if missing_in_bot_commands:
+        logger.error(f"❌ КРИТИЧНО: Команды зарегистрированы, но НЕ в BotCommand списке: {missing_in_bot_commands}")
+    if missing_in_handlers:
+        logger.warning(f"⚠️ Команды в BotCommand списке, но НЕ зарегистрированы: {missing_in_handlers}")
+except Exception as e:
+    logger.warning(f"Не удалось проверить синхронизацию команд: {e}")
+```
+
+## Чеклист при добавлении команды
+
+- [ ] Создана функция обработчика в `src/handlers/commands.py`
+- [ ] Функция импортирована в `bot.py`
+- [ ] Зарегистрирован `CommandHandler("command_name", handler_function)`
+- [ ] Добавлен `BotCommand("command_name", "Описание")` в список команд
+- [ ] Команда в правильном списке (общие/административные)
+- [ ] Описание команды понятное
+- [ ] Проверена синхронизация (все CommandHandler есть в BotCommand)
+
+## Типичные ошибки
+
+### ❌ Ошибка 1: Команда зарегистрирована, но не в BotCommand
+```python
+# Зарегистрирована
+app.add_handler(CommandHandler("help", help_command))
+
+# НО забыли добавить в BotCommand список!
+# commands = [
+#     BotCommand("rules", "..."),
+#     # Нет BotCommand("help", "...")
+# ]
+```
+**Решение**: Всегда добавлять команду в BotCommand список сразу после регистрации.
+
+### ❌ Ошибка 2: Команда в BotCommand, но не зарегистрирована
+```python
+# В BotCommand списке
+commands = [
+    BotCommand("help", "Помощь"),
+]
+
+# НО забыли зарегистрировать!
+# app.add_handler(CommandHandler("help", help_command))
+```
+**Решение**: Всегда регистрировать CommandHandler сразу после добавления в BotCommand.
+
+### ❌ Ошибка 3: Неправильный порядок
+```python
+# В BotCommand
+commands = [
+    BotCommand("rules", "..."),
+    BotCommand("help", "..."),
+]
+
+# Но в регистрации порядок другой
+app.add_handler(CommandHandler("help", help_command))  # Первая
+app.add_handler(CommandHandler("rules", send_rules))   # Вторая
+```
+**Решение**: Сохранять одинаковый порядок в обоих местах (желательно, но не критично).
+
+## Правило: "Два места - одна проверка"
+
+При добавлении команды **ВСЕГДА** обновлять **ОБА** места:
+1. Регистрация `CommandHandler` в `main()`
+2. Добавление `BotCommand` в `post_init()`
+
+**Нельзя** обновлять только одно место!
+
+## Автоматизация
+
+В будущем можно создать функцию для автоматической синхронизации:
+
+```python
+def sync_commands_with_handlers(app, commands_list):
+    """Проверка синхронизации команд"""
+    registered = [h.commands[0] for h in app.handlers[0] if isinstance(h, CommandHandler)]
+    bot_commands = [c.command for c in commands_list]
+    
+    missing = set(registered) - set(bot_commands)
+    if missing:
+        raise ValueError(f"Команды не синхронизированы: {missing}")
+```
+
+## Важно помнить
+
+- **Каждая команда должна быть в двух местах**: CommandHandler И BotCommand
+- **Проверка синхронизации обязательна** перед коммитом
+- **Нельзя забывать добавлять команды в BotCommand** - это критично для работы бота
+- **Описания команд должны быть понятными** для пользователей

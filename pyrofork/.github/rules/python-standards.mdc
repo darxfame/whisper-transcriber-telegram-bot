@@ -1,0 +1,71 @@
+---
+description: Python coding standards and conventions for the project
+alwaysApply: true
+---
+
+# Python Coding Standards
+
+## Code Style
+
+### Naming Conventions
+- **Functions**: `snake_case` (e.g., `process_message_logic`, `validate_content`)
+- **Classes**: `PascalCase` (e.g., `TopicFilter`, `PIIMaskFilter`)
+- **Constants**: `UPPER_SNAKE_CASE` (e.g., `SOURCE_CHAT_ID`, `DELETE_AFTER_PUBLISH`)
+- **Variables**: `snake_case`
+
+### Function Structure
+```python
+# ✅ GOOD
+async def process_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Краткое описание функции в docstring"""
+    logger.info("Начало обработки сообщения")
+    try:
+        # Логика обработки
+        result = await some_operation()
+        return result
+    except Exception as e:
+        logger.error(f"Ошибка при обработке: {e}", exc_info=True)
+        raise
+
+# ❌ BAD - отсутствие docstring, пустой except
+async def process_message(update, context):
+    try:
+        result = await some_operation()
+    except:
+        pass
+```
+
+### Docstrings
+- Все функции должны иметь docstrings
+- Использовать тройные кавычки `"""` для docstrings
+- Описывать параметры и возвращаемые значения
+
+### Error Handling
+```python
+# ✅ GOOD - логирование с контекстом
+try:
+    await operation()
+except TelegramError as e:
+    logger.error(f"Telegram API error: {e}", exc_info=True)
+    raise
+except Exception as e:
+    logger.error(f"Unexpected error: {e}", exc_info=True)
+    raise
+
+# ❌ BAD - тихое проглатывание ошибок
+try:
+    await operation()
+except:
+    pass
+```
+
+### Logging
+- Использовать модуль `logging`, не `print()`
+- Маскировать PII (персональные данные) в логах
+- Использовать соответствующие уровни: `logger.info()`, `logger.warning()`, `logger.error()`
+- Включать контекст в сообщениях логов
+
+### Imports
+- Группировать импорты: стандартная библиотека → сторонние → локальные
+- Использовать абсолютные импорты для локальных модулей: `from src.config import BOT_TOKEN`
+- Избегать `import *`

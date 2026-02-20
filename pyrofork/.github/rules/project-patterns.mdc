@@ -1,0 +1,127 @@
+---
+description: Project-specific patterns and conventions
+alwaysApply: true
+---
+
+# Project-Specific Patterns
+
+## Архитектура проекта
+
+### Структура модулей
+```
+src/
+├── config.py           # Конфигурация и константы
+├── logging_config.py   # Настройка логирования
+├── database/           # Работа с БД
+│   ├── database.py     # Основные операции
+│   ├── sync.py         # Синхронизация
+│   ├── deletion.py     # Удаление сообщений
+│   └── cleanup.py      # Очистка старых данных
+├── handlers/           # Обработчики событий
+│   ├── commands.py     # Команды бота
+│   ├── messages.py     # Обработка сообщений
+│   ├── callbacks.py    # Callback кнопки
+│   └── admin.py        # Админские функции
+└── utils/              # Утилиты
+    ├── validation.py   # Валидация контента
+    ├── formatting.py   # Форматирование текста
+    └── limits.py       # Ограничения (лимиты)
+```
+
+### Импорты
+
+```python
+# ✅ GOOD - абсолютные импорты из src
+from src.config import BOT_TOKEN, SOURCE_CHAT_ID
+from src.database.database import save_advertisement
+from src.utils.validation import validate_content
+
+# ❌ BAD - относительные импорты из корня
+from config import BOT_TOKEN
+from database.database import save_advertisement
+```
+
+## Конфигурация
+
+### Переменные окружения
+- Все конфигурационные значения должны быть в `src/config.py`
+- Использовать `os.environ.get()` с дефолтными значениями
+- Проверять наличие критических переменных (BOT_TOKEN)
+
+### Путь к БД
+```python
+# ✅ GOOD - автоматическое определение пути
+DB_PATH = get_db_path()  # Функция определяет Railway vs локальный путь
+
+# ❌ BAD - хардкод пути
+DB_PATH = "/app/data/advertisements.db"
+```
+
+## Логирование
+
+### Настройка
+- Использовать `setup_logging()` из `src/logging_config.py`
+- Все модули должны использовать: `logger = logging.getLogger(__name__)`
+- Маскировать PII данные через `PIIMaskFilter`
+
+### Формат логов
+```python
+# ✅ GOOD - информативные логи с контекстом
+logger.info(f"Обработка сообщения ID {message_id} от пользователя {user_id}")
+logger.error(f"Ошибка при сохранении объявления: {e}", exc_info=True)
+
+# ❌ BAD - неинформативные логи
+logger.info("Обработка")
+logger.error("Ошибка")
+```
+
+## Валидация
+
+### Паттерны валидации
+- Все regex паттерны должны быть в `src/config.py` как константы
+- Валидация должна возвращать список ошибок, не бросать исключения
+- Сообщения об ошибках должны быть понятными для пользователей
+
+```python
+# ✅ GOOD - валидация возвращает список ошибок
+errors = await validate_content(text, keyword)
+if errors:
+    await send_errors(errors)
+    return
+
+# ❌ BAD - валидация бросает исключения
+try:
+    validate_content(text, keyword)
+except ValidationError as e:
+    await send_error(str(e))
+```
+
+## Обработка медиагрупп
+
+### Паттерн сбора медиагрупп
+```python
+# ✅ GOOD - стандартный паттерн для медиагрупп
+if message.media_group_id:
+    mg_id = message.media_group_id
+    if 'media_groups_temp' not in context.bot_data:
+        context.bot_data['media_groups_temp'] = {}
+    
+    temp_storage = context.bot_data['media_groups_temp']
+    if mg_id not in temp_storage:
+        temp_storage[mg_id] = []
+        context.job_queue.run_once(process_media_group_job, 2, data={'media_group_id': mg_id})
+    
+    temp_storage[mg_id].append(message)
+```
+
+## Версионирование
+
+- Версия бота хранится в `BOT_VERSION` в `src/config.py`
+- При изменении функциональности обновлять версию
+- Версия может быть установлена через переменную окружения
+
+## Тестирование
+
+- Тесты находятся в директории `tests/`
+- Использовать pytest для тестирования
+- Тесты должны проверять основные сценарии использования

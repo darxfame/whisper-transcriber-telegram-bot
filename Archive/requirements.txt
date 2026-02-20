@@ -1,0 +1,7 @@
+pyrogram==2.0.106
+tgcrypto
+faster-whisper==1.0.3
+aiogram==3.13.1
+redis
+deepmultilingualpunctuation
+requests

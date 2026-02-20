@@ -1,0 +1,49 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    volumes:
+      - ./redis_data:/data
+
+  userbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: []
+    command: ["python", "src/userbot.py"]
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./session:/app/session
+      - ./temp:/app/temp
+      - whisper_models:/app/models
+    environment:
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - BOT_TOKEN=${BOT_TOKEN:-}
+      - FRIEND_USER_ID=${FRIEND_USER_ID:-0}
+      - TRANSCRIBE_MY_VOICES=true
+      - TRANSCRIBE_FRIEND_VOICES=true
+      - WHISPER_MODEL=medium
+      - RUNNING_IN_DOCKER=true
+      - BUILD_DATE=${BUILD_DATE:-}
+      - HF_HOME=/app/models
+      - HF_TOKEN=${HF_TOKEN:-}
+    deploy:
+      resources:
+        reservations:
+          memory: 50G # Много RAM для Whisper
+          cpus: "8" # Твои 8 ядер
+volumes:
+  whisper_models: # ← и сюда
+
+
+  # Оригинальный bot сервис из репозитория, если нужен

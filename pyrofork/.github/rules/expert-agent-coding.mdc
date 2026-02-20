@@ -1,0 +1,232 @@
+---
+description: Expert agent application and autonomous coding standards
+alwaysApply: true
+---
+
+# Expert Agent Application and Autonomous Coding
+
+## Role
+You are an expert in applying agents and autonomous coding. Every piece of code you produce must be thoroughly checked and fully functional.
+
+## Core Principles
+
+### 1. Always Apply Relevant Agents
+- **Before coding**: Identify which agents apply to the task
+- **During coding**: Follow agent guidelines and patterns
+- **After coding**: Verify code against agent checklists
+
+### 2. Autonomous Code Quality
+Every code change must:
+- ✅ Pass syntax check (`read_lints`)
+- ✅ Follow project patterns (`systemPatterns.md`)
+- ✅ Include proper error handling
+- ✅ Have appropriate logging
+- ✅ Be tested for common errors
+- ✅ Match project code style
+
+### 3. Agent Application Rules
+
+**When working with database**:
+- Apply `database-sync` agent
+- Apply `database-init` agent
+- Check parameterized queries, transactions, migrations
+
+**When working with logging**:
+- Apply `railway-logging` agent
+- Avoid Railway.com error keywords in INFO messages
+- Use appropriate log levels
+
+**When working with Railway.com**:
+- Apply `railway-persistence` agent
+- Apply `railway-env` agent
+- Verify environment variables and volumes
+
+**When working with Telegram Bot API**:
+- Apply `telegram-api-check` agent
+- Verify all API calls have result checking
+- Verify command setup includes verification
+- Check completeness of command lists
+
+**Before any commit**:
+- Apply `code-review` agent
+- Run full checklist
+- Verify all requirements met
+
+### 4. Code Verification Process
+
+**Step 1: Syntax Check**
+```python
+# Always run read_lints before committing
+read_lints(['path/to/file.py'])
+```
+
+**Step 2: Pattern Compliance**
+- Check against `systemPatterns.md`
+- Verify Telegram bot patterns
+- Verify database patterns
+- Verify async patterns
+
+**Step 3: Error Handling**
+- All async operations have error handling
+- Database operations have transaction handling
+- Logging includes context
+
+**Step 4: Testing**
+- Verify code works as expected
+- Check edge cases
+- Test error scenarios
+
+### 5. Mandatory Checks (КРИТИЧНО - НИКОГДА не пропускать!)
+
+**ПЕРЕД завершением ЛЮБОЙ задачи ОБЯЗАТЕЛЬНО:**
+
+1. **Запустить `read_lints` для ВСЕХ измененных файлов**:
+   ```python
+   read_lints(['path/to/file1.py', 'path/to/file2.py'])
+   ```
+   - ❌ Если есть ошибки - НЕ завершать задачу, НЕ коммитить
+   - ✅ Исправить все ошибки
+   - ✅ Запустить `read_lints` снова
+   - ✅ Убедиться что ошибок нет
+
+2. **Проверить импорты**:
+   - [ ] Нет дубликатов импортов
+   - [ ] Нет shadowing импортов (локальные импорты модулей, импортированных на уровне модуля)
+   - [ ] Нет `UnboundLocalError`
+
+3. **Применить релевантные агенты**:
+   - [ ] Прочитать правила из `.cursor/rules/`
+   - [ ] Применить агентов из `.cursor/skills/`
+   - [ ] Проверить чеклисты из правил
+
+4. **Финальная проверка**:
+   - [ ] **Syntax correct** (no errors from `read_lints`) - ОБЯЗАТЕЛЬНО!
+   - [ ] **NO IndentationError** - проверить через `read_lints`
+   - [ ] **NO SyntaxError** - проверить через `read_lints`
+   - [ ] **NO UnboundLocalError** - проверить импорты
+   - [ ] **NO shadowing imports** - проверить импорты
+   - [ ] Follows project patterns
+   - [ ] Error handling present
+   - [ ] Logging appropriate
+   - [ ] Database queries safe
+   - [ ] Async/await correct
+   - [ ] No PII in logs
+   - [ ] Railway.com-friendly logging
+   - [ ] **Version updated** (`BOT_VERSION` in `src/config.py`)
+   - [ ] **Memory-bank updated** (`memory-bank/activeContext.md` with changes)
+   - [ ] **Финальный `read_lints`** - ошибок нет
+
+**КРИТИЧНО**: Если `read_lints` показывает ошибки - НЕ завершать задачу, исправить ошибки!
+
+### 6. Agent Skills Location
+
+Agents are located in `.cursor/skills/`:
+- `code-review/` - Code review before commits
+- `database-sync/` - Database synchronization
+- `database-init/` - Database initialization
+- `railway-logging/` - Railway.com logging
+- `railway-persistence/` - Railway.com persistence
+- `railway-env/` - Railway.com environment variables
+- `telegram-api-check/` - Telegram Bot API integration verification
+
+### 7. Application Workflow (MANDATORY ORDER)
+
+**ПОРЯДОК ПРИМЕНЕНИЯ АГЕНТОВ (строго соблюдать!):**
+
+1. **Before coding** → Identify relevant agents based on file path/task type
+2. **Read agent skills** → Understand requirements from `.cursor/skills/` and `AGENTS.md`
+3. **Code implementation** → Write code following agent guidelines
+4. **After coding** → Apply specific agents:
+   - **Syntax check** → `read_lints` tool (ALWAYS!)
+   - **Import check** → Verify no duplicate imports (module-level vs function-level)
+   - **UnboundLocalError check** → Verify no shadowing imports
+   - **Pattern compliance** → Check against project patterns
+   - **Error handling** → Verify all errors handled
+5. **Final review** → Apply `code-review` agent with FULL checklist
+6. **Version & docs** → Update version and memory-bank
+7. **Final verification** → Run `read_lints` again
+8. **Commit** → Only after ALL checks pass
+
+## Examples
+
+### Example 1: Database Operation
+```
+Task: Add new database function
+1. Apply database-sync agent
+2. Check: parameterized queries, transactions, error handling
+3. Implement following agent patterns
+4. Verify with code-review agent
+5. Commit
+```
+
+### Example 2: Logging Fix
+```
+Task: Fix logging messages
+1. Apply railway-logging agent
+2. Check: avoid error keywords, use emojis, structure messages
+3. Fix all log messages
+4. Verify with code-review agent
+5. Commit
+```
+
+### Example 3: New Feature
+```
+Task: Add new feature
+1. Apply relevant agents (database, handlers, etc.)
+2. Follow all agent guidelines
+3. Implement feature
+4. Apply code-review agent
+5. Verify all checks pass
+6. Commit
+```
+
+## Important
+
+- **Never commit code without agent verification**
+- **Always apply code-review agent before commit**
+- **Follow agent guidelines strictly**
+- **Verify code is fully functional**
+- **Test common error scenarios**
+
+### 8. Version and Documentation Updates
+
+**MANDATORY after any code changes:**
+1. **Update version** in `src/config.py`:
+   ```python
+   BOT_VERSION = os.environ.get("BOT_VERSION", "X.Y.Z")
+   ```
+   - Increment patch version (Z) for bug fixes
+   - Increment minor version (Y) for new features
+   - Increment major version (X) for breaking changes
+
+2. **Update memory-bank** in `memory-bank/activeContext.md`:
+   - Add new version section with changes
+   - Update "Текущая версия" section
+   - Document what was fixed/added/changed
+   - Include affected files
+
+**Example:**
+```markdown
+### Версия 5.19.3 (текущая)
+- **Исправлено**: Описание проблемы и решения
+- **Изменено**: Список измененных файлов
+- **Добавлено**: Новые функции (если есть)
+```
+
+### 9. Auto-Commit After Changes
+
+**After completing code changes:**
+1. Review all modified files
+2. **Update version** in `src/config.py`
+3. **Update memory-bank** in `memory-bank/activeContext.md`
+4. Apply `code-review` agent for final check
+5. Generate commit message using `git-commit` agent
+6. **Always suggest commit** to user with generated message
+7. User can approve or modify before committing
+
+**Commit message format:**
+- Use conventional commits format
+- Type: feat, fix, refactor, docs, etc.
+- Scope: admin, database, handlers, etc.
+- Clear, descriptive subject
+- Detailed body for significant changes
