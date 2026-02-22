@@ -5,8 +5,8 @@ import os
 
 # ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
 # ВСТАВЬ СЮДА СВОИ ДАННЫЕ:
-API_ID=26607062
-API_HASH='8407ffeda812e8de2c1ed65f53f9b4c5'
+API_ID=
+API_HASH=''
 # →→→→→→→→→→→→→→→→→→→→→→→→→→→→→→→→→→→→→
 
 if not API_ID or not API_HASH:
